@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SafeGuard — PPE Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div class="logo-text" id="appName">Safe<span>Guard</span></div>
+  </div>
+  <div class="header-controls">
+    <button class="control-btn" onclick="toggleLang()" id="langBtn">TR</button>
+    <button class="control-btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
+  </div>
+</header>
+
+<input type="file" id="fileInput" accept="image/*,video/*" onchange="handleFileUpload(event)">
+<input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleCameraCapture(event)">
+
+<main>
+  <!-- HOME PAGE -->
+  <div class="panel active" id="homePage">
+    <div class="hero">
+      <div class="hero-badge" id="heroBadge">REAL-TIME PPE DETECTION</div>
+      <h1 id="heroTitle">Detect Safety<br><span>Equipment</span></h1>
+      <p id="heroDesc">AI-powered personal protective equipment detection using YOLOv8</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">14</div>
+        <div class="stat-label" id="statClasses">CLASSES</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">79%</div>
+        <div class="stat-label" id="statAccuracy">ACCURACY</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">8.8K</div>
+        <div class="stat-label" id="statImages">IMAGES</div>
+      </div>
+    </div>
+
+    <p class="section-label" id="chooseLabel">CHOOSE DETECTION MODE</p>
+
+    <div class="modes-grid">
+      <div class="mode-card camera" onclick="startCamera()">
+        <span class="mode-icon">📸</span>
+        <div class="mode-title" id="modeCamera">Camera</div>
+        <div class="mode-desc" id="modeCameraDesc">Capture photo instantly</div>
+      </div>
+      <div class="mode-card live" onclick="startLive()">
+        <span class="mode-icon">🎥</span>
+        <div class="mode-title" id="modeLive">Live Video</div>
+        <div class="mode-desc" id="modeLiveDesc">Real-time detection</div>
+      </div>
+      <div class="mode-card file mode-card-full" onclick="openFile()">
+        <span class="mode-icon">📁</span>
+        <div class="mode-title" id="modeFile">Upload File</div>
+        <div class="mode-desc" id="modeFileDesc">Select image or video from device</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMERA PAGE -->
+  <div class="panel" id="cameraPage">
+    <p class="section-label" id="cameraLabel">CAMERA DETECTION</p>
+
+    <div class="detection-area" id="cameraArea">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="live-indicator" id="liveIndicator">LIVE</div>
+      <div class="scan-overlay" id="scanOverlay">
+        <div class="scan-line"></div>
+      </div>
+      <div class="detection-placeholder" id="cameraPlaceholder">
+        <div class="icon">📸</div>
+        <p id="cameraPlaceholderText">Take a photo to detect<br>PPE equipment</p>
+      </div>
+      <canvas id="detectionCanvas" style="display:none;"></canvas>
+      <video id="liveVideo" autoplay playsinline style="display:none;"></video>
+    </div>
+
+    <div class="loading" id="cameraLoading">
+      <div class="loading-ring"></div>
+      <p id="analyzingText">Analyzing image...</p>
+    </div>
+
+    <div class="results-panel" id="cameraResults">
+      <div class="results-header">
+        <div class="results-title">
+          🎯 <span id="detectedText">Detected Objects</span>
+          <span class="results-count" id="resultsCount">0</span>
+        </div>
+      </div>
+      <div id="resultsList"></div>
+    </div>
+
+    <button class="action-btn" id="captureBtn" onclick="capturePhoto()">
+      📸 <span id="captureText">Take Photo</span>
+    </button>
+    <button class="action-btn secondary" id="liveBtn" onclick="toggleLive()">
+      🎥 <span id="liveText">Start Live Detection</span>
+    </button>
+    <button class="action-btn secondary" onclick="goHome()">
+      ← <span id="backText">Back</span>
+    </button>
+  </div>
+
+  <!-- FILE PAGE -->
+  <div class="panel" id="filePage">
+    <p class="section-label" id="fileLabel">FILE DETECTION</p>
+
+    <div class="detection-area" id="fileArea" onclick="openFile()">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="scan-overlay" id="fileScanOverlay">
+        <div class="scan-line"></div>
+      </div>
+      <div class="drop-zone" id="fileDropZone">
+        <div class="detection-placeholder">
+          <div class="icon">📁</div>
+          <p id="fileDropText">Tap to select image or video<br>from your device</p>
+        </div>
+      </div>
+      <img id="previewImage" style="display:none;" alt="Preview">
+    </div>
+
+    <div class="loading" id="fileLoading">
+      <div class="loading-ring"></div>
+      <p id="fileAnalyzingText">Analyzing file...</p>
+    </div>
+
+    <div class="results-panel" id="fileResults">
+      <div class="results-header">
+        <div class="results-title">
+          🎯 <span id="fileDetectedText">Detected Objects</span>
+          <span class="results-count" id="fileResultsCount">0</span>
+        </div>
+      </div>
+      <div id="fileResultsList"></div>
+    </div>
+
+    <button class="action-btn" onclick="openFile()">
+      📁 <span id="selectFileText">Select File</span>
+    </button>
+    <button class="action-btn secondary" onclick="goHome()">
+      ← <span id="backText2">Back</span>
+    </button>
+  </div>
+
+  <!-- ABOUT PAGE -->
+  <div class="panel" id="aboutPage">
+    <div class="hero" style="padding-top: 16px;">
+      <h1 style="font-size: 24px;" id="aboutTitle">About <span>SafeGuard</span></h1>
+    </div>
+
+    <div class="about-section">
+      <h3 id="aboutModelTitle">Model Info</h3>
+      <p id="aboutModelDesc">YOLOv8 (You Only Look Once v8) trained on 8,814 images across 14 PPE classes. Developed as a final year project at Bilecik Şeyh Edebali University.</p>
+    </div>
+
+    <div class="about-section">
+      <h3 id="aboutAccuracyTitle">Model Accuracy</h3>
+      <div style="margin-top: 8px;">
+        <div class="accuracy-bar"><span class="accuracy-label">Goggles</span><div class="accuracy-track"><div class="accuracy-fill" style="width:97.5%"></div></div><span class="accuracy-value">97.5%</span></div>
+        <div class="accuracy-bar"><span class="accuracy-label">Gloves</span><div class="accuracy-track"><div class="accuracy-fill" style="width:95.6%"></div></div><span class="accuracy-value">95.6%</span></div>
+        <div class="accuracy-bar"><span class="accuracy-label">Hardhat</span><div class="accuracy-track"><div class="accuracy-fill" style="width:90.9%"></div></div><span class="accuracy-value">90.9%</span></div>
+        <div class="accuracy-bar"><span class="accuracy-label">NO-Hardhat</span><div class="accuracy-track"><div class="accuracy-fill medium" style="width:73.3%"></div></div><span class="accuracy-value">73.3%</span></div>
+        <div class="accuracy-bar"><span class="accuracy-label">Mask</span><div class="accuracy-track"><div class="accuracy-fill medium" style="width:51.9%"></div></div><span class="accuracy-value">51.9%</span></div>
+        <div class="accuracy-bar"><span class="accuracy-label">NO-Safety Vest</span><div class="accuracy-track"><div class="accuracy-fill low" style="width:20.1%"></div></div><span class="accuracy-value">20.1%</span></div>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <h3 id="aboutClassesTitle">Detected Classes</h3>
+      <div class="class-grid">
+        <div class="class-tag">🪖 Hardhat</div>
+        <div class="class-tag">❌ NO-Hardhat</div>
+        <div class="class-tag">🧤 Gloves</div>
+        <div class="class-tag">❌ NO-Gloves</div>
+        <div class="class-tag">🥽 Goggles</div>
+        <div class="class-tag">❌ NO-Goggles</div>
+        <div class="class-tag">😷 Mask</div>
+        <div class="class-tag">❌ NO-Mask</div>
+        <div class="class-tag">🦺 Safety Vest</div>
+        <div class="class-tag">❌ NO-Safety Vest</div>
+        <div class="class-tag">🚧 Safety Cone</div>
+        <div class="class-tag">🪜 Ladder</div>
+        <div class="class-tag">🧍 Person</div>
+        <div class="class-tag">⚠️ Fall-Detected</div>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <h3 id="aboutDevTitle">Developer</h3>
+      <p id="aboutDevDesc">Zehra Menekşe — Computer Engineering, Bilecik Şeyh Edebali University<br><br>Advisor: Dr. Öğr. Üyesi Gizem ATAÇ KALE</p>
+    </div>
+  </div>
+</main>
+
+  <!-- SETTINGS PAGE -->
+  <div class="panel" id="settingsPage">
+    <div class="hero" style="padding-top: 16px;">
+      <h1 style="font-size: 24px;">Server <span>Settings</span></h1>
+      <p style="margin-top: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text2);">Enter your ngrok URL to connect to the detection server</p>
+    </div>
+
+    <div class="about-section">
+      <h3>SERVER URL</h3>
+      <p style="margin-bottom: 12px;">Paste your ngrok URL from Colab here. It looks like:<br><br>
+      <span style="color: var(--accent);">https://xxxx.ngrok-free.app</span></p>
+      
+      <input type="text" id="serverUrlInput" 
+        placeholder="https://xxxx.ngrok-free.app"
+        style="width:100%; padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font-mono); font-size:12px; outline:none; margin-bottom:12px;">
+      
+      <button class="action-btn" onclick="saveServerUrl()" style="margin-bottom: 8px;">
+        💾 Save URL
+      </button>
+      <button class="action-btn secondary" onclick="testConnection()">
+        🔌 Test Connection
+      </button>
+    </div>
+
+    <div class="about-section" id="connectionStatus" style="display:none;">
+      <h3 id="statusTitle">STATUS</h3>
+      <p id="statusText"></p>
+    </div>
+
+    <div class="about-section">
+      <h3>HOW TO USE</h3>
+      <p style="line-height: 1.8;">
+        1. Open Colab and run all cells<br>
+        2. Copy the ngrok URL from the output<br>
+        3. Paste it here and tap Save<br>
+        4. Test connection to verify<br>
+        5. Start detecting! 🎯
+      </p>
+    </div>
+  </div>
+
+
+  <div class="nav-item active" id="nav-home" onclick="showPage('home')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label" id="navHome">HOME</span>
+  </div>
+  <div class="nav-item" id="nav-camera" onclick="showPage('camera')">
+    <span class="nav-icon">📸</span>
+    <span class="nav-label" id="navCamera">DETECT</span>
+  </div>
+  <div class="nav-item" id="nav-file" onclick="showPage('file')">
+    <span class="nav-icon">📁</span>
+    <span class="nav-label" id="navFile">FILES</span>
+  </div>
+  <div class="nav-item" id="nav-about" onclick="showPage('about')">
+    <span class="nav-icon">ℹ️</span>
+    <span class="nav-label" id="navAbout">ABOUT</span>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="showPage('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label" id="navSettings">SERVER</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
