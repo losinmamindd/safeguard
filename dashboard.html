@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SafeGuard — Compliance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div class="logo-text" id="appName">Safe<span>Guard</span></div>
+  </div>
+  <div class="header-controls">
+    <button class="control-btn" onclick="toggleLang()" id="langBtn">TR</button>
+    <button class="control-btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
+  </div>
+</header>
+
+<main>
+  <div class="panel active" id="dashboardPage">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge" id="heroBadge">COMPLIANCE DASHBOARD</div>
+      <h1 id="pageTitle">PPE <span>Compliance</span></h1>
+      <p id="pageDesc" style="font-family:var(--font-mono);">Monthly compliance statistics, automatically logged when workers are detected.</p>
+    </div>
+
+    <!-- ── MONTH PICKER ────────────────────────────── -->
+    <p class="section-label" id="periodLabel">REPORTING PERIOD</p>
+
+    <div class="about-section" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <input type="month" id="monthPicker"
+        style="flex:1; min-width:140px; padding:10px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font-mono); font-size:12px; outline:none;">
+      <button class="action-btn" onclick="loadAll()" style="flex:0 0 auto; width:auto; padding:10px 20px; margin-bottom:0;">
+        📊 <span id="loadBtnText">Load Report</span>
+      </button>
+    </div>
+
+    <!-- ── SUMMARY STATS ───────────────────────────── -->
+    <div class="stats-bar" id="summaryStats">
+      <div class="stat-item">
+        <div class="stat-value" id="statAvg">–</div>
+        <div class="stat-label" id="statAvgLabel">AVG SCORE</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statChecks">–</div>
+        <div class="stat-label" id="statChecksLabel">CHECKS</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statWorkers">–</div>
+        <div class="stat-label" id="statWorkersLabel">WORKERS</div>
+      </div>
+    </div>
+
+    <!-- ── WORKER OF THE MONTH ─────────────────────── -->
+    <div id="wotmSection" style="display:none;">
+      <p class="section-label" id="wotmLabel">WORKER OF THE MONTH</p>
+      <div class="about-section" style="background:rgba(0,255,136,0.05); border-color:rgba(0,255,136,0.3);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:2.2rem;">🏆</span>
+          <div>
+            <div class="hero-badge" style="margin-bottom:6px; display:inline-flex;" id="wotmBadge">WORKER OF THE MONTH</div>
+            <div style="font-size:16px; font-weight:800; letter-spacing:-0.5px;" id="wotmName">–</div>
+            <div style="font-family:var(--font-mono); font-size:11px; color:var(--text2); margin-top:2px;" id="wotmSub">–</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COMPLIANCE REPORT ───────────────────────── -->
+    <p class="section-label" id="reportLabel">MONTHLY COMPLIANCE REPORT</p>
+
+    <div class="loading" id="reportLoading">
+      <div class="loading-ring"></div>
+      <p id="reportLoadingText">Loading report...</p>
+    </div>
+
+    <div class="results-panel" id="reportPanel">
+      <div class="results-header">
+        <div class="results-title">
+          📈 <span id="reportTitle">Compliance Scores</span>
+          <span class="results-count" id="reportCount">0</span>
+        </div>
+        <span id="exportBtn" onclick="exportCSV()"
+          style="font-family:var(--font-mono); font-size:11px; color:var(--accent); cursor:pointer; letter-spacing:0.5px; display:none;"
+          onmouseover="this.style.textDecoration='underline'"
+          onmouseout="this.style.textDecoration='none'">
+          ⬇ CSV
+        </span>
+      </div>
+      <div id="reportList"></div>
+    </div>
+
+    <!-- ── RECENT LOGS ─────────────────────────────── -->
+    <p class="section-label" id="logsLabel">RECENT COMPLIANCE LOGS</p>
+
+    <!-- Worker filter -->
+    <div style="margin-bottom:12px;">
+      <select id="workerFilter" onchange="loadLogs()"
+        style="width:100%; padding:10px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font-mono); font-size:12px; outline:none; cursor:pointer;">
+        <option value="" id="filterAll">All Workers</option>
+      </select>
+    </div>
+
+    <div class="loading" id="logsLoading">
+      <div class="loading-ring"></div>
+      <p id="logsLoadingText">Loading logs...</p>
+    </div>
+
+    <div class="results-panel" id="logsPanel">
+      <div class="results-header">
+        <div class="results-title">
+          🕐 <span id="logsTitle">Recent Logs</span>
+          <span class="results-count" id="logsCount">0</span>
+        </div>
+      </div>
+      <div id="logsList">
+        <div style="color:var(--text2); font-family:var(--font-mono); font-size:12px; padding:12px 0;" id="logsEmpty">
+          No logs found.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.panel -->
+</main>
+
+<!-- ── Bottom Nav ──────────────────────────────────────── -->
+<div class="bottom-nav">
+  <div class="nav-item" onclick="location.href='index.html'">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label" id="navHome">HOME</span>
+  </div>
+  <div class="nav-item" onclick="location.href='index.html'">
+    <span class="nav-icon">📸</span>
+    <span class="nav-label" id="navDetect">DETECT</span>
+  </div>
+  <div class="nav-item" onclick="location.href='workers.html'">
+    <span class="nav-icon">👷</span>
+    <span class="nav-label" id="navWorkers">WORKERS</span>
+  </div>
+  <div class="nav-item active">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label" id="navDashboard">DASHBOARD</span>
+  </div>
+  <div class="nav-item" onclick="location.href='index.html'">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label" id="navServer">SERVER</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── State ─────────────────────────────────────────── */
+let currentLang = localStorage.getItem('sg_lang') || 'en';
+let reportCache = [];   // for CSV export
+
+/* ── Translations ───────────────────────────────────── */
+const t = {
+  en: {
+    appName:            'Safe<span style="color:var(--accent)">Guard</span>',
+    heroBadge:          'COMPLIANCE DASHBOARD',
+    pageTitle:          'PPE <span>Compliance</span>',
+    pageDesc:           'Monthly compliance statistics, automatically logged when workers are detected.',
+    periodLabel:        'REPORTING PERIOD',
+    loadBtnText:        'Load Report',
+    statAvgLabel:       'AVG SCORE',
+    statChecksLabel:    'CHECKS',
+    statWorkersLabel:   'WORKERS',
+    wotmLabel:          'WORKER OF THE MONTH',
+    wotmBadge:          'WORKER OF THE MONTH',
+    reportLabel:        'MONTHLY COMPLIANCE REPORT',
+    reportLoadingText:  'Loading report...',
+    reportTitle:        'Compliance Scores',
+    logsLabel:          'RECENT COMPLIANCE LOGS',
+    logsLoadingText:    'Loading logs...',
+    logsTitle:          'Recent Logs',
+    filterAll:          'All Workers',
+    logsEmpty:          'No logs found.',
+    navHome:            'HOME',
+    navDetect:          'DETECT',
+    navWorkers:         'WORKERS',
+    navDashboard:       'DASHBOARD',
+    navServer:          'SERVER',
+  },
+  tr: {
+    appName:            'Güvenli<span style="color:var(--accent)">Göz</span>',
+    heroBadge:          'UYUM GÖSTERGE PANELİ',
+    pageTitle:          'KKD <span>Uyumu</span>',
+    pageDesc:           'İşçiler tespit edildiğinde otomatik kaydedilen aylık uyum istatistikleri.',
+    periodLabel:        'RAPORLAMA DÖNEMİ',
+    loadBtnText:        'Raporu Yükle',
+    statAvgLabel:       'ORT. PUAN',
+    statChecksLabel:    'KONTROL',
+    statWorkersLabel:   'İŞÇİLER',
+    wotmLabel:          'AYIN İŞÇİSİ',
+    wotmBadge:          'AYIN İŞÇİSİ',
+    reportLabel:        'AYLIK UYUM RAPORU',
+    reportLoadingText:  'Rapor yükleniyor...',
+    reportTitle:        'Uyum Puanları',
+    logsLabel:          'SON UYUM KAYITLARI',
+    logsLoadingText:    'Kayıtlar yükleniyor...',
+    logsTitle:          'Son Kayıtlar',
+    filterAll:          'Tüm İşçiler',
+    logsEmpty:          'Kayıt bulunamadı.',
+    navHome:            'ANA',
+    navDetect:          'TESPİT',
+    navWorkers:         'İŞÇİLER',
+    navDashboard:       'PANEL',
+    navServer:          'SUNUCU',
+  }
+};
+
+function applyTranslations() {
+  const lang = t[currentLang];
+  Object.keys(lang).forEach(key => {
+    const el = document.getElementById(key);
+    if (el) el.innerHTML = lang[key];
+  });
+  document.documentElement.lang = currentLang;
+  document.getElementById('langBtn').textContent = currentLang === 'en' ? 'TR' : 'EN';
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'tr' : 'en';
+  localStorage.setItem('sg_lang', currentLang);
+  applyTranslations();
+}
+
+function toggleTheme() {
+  const isDark = document.body.getAttribute('data-theme') !== 'light';
+  document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('sg_theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+/* ── Server URL ─────────────────────────────────────── */
+function getServerUrl() {
+  return (localStorage.getItem('serverUrl') || '').replace(/\/$/, '');
+}
+function hdrs() {
+  return { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
+}
+
+/* ── Load all data ──────────────────────────────────── */
+async function loadAll() {
+  const url = getServerUrl();
+  if (!url) {
+    showToast(currentLang === 'tr' ? '❌ Önce sunucu URL\'sini girin' : '❌ Set server URL in Settings first');
+    return;
+  }
+  await Promise.all([loadReport(), loadWorkerFilter()]);
+  await loadLogs();
+}
+
+/* ── Monthly report ─────────────────────────────────── */
+async function loadReport() {
+  const month  = document.getElementById('monthPicker').value;
+  const panel  = document.getElementById('reportPanel');
+  const list   = document.getElementById('reportList');
+  const loading = document.getElementById('reportLoading');
+
+  panel.classList.remove('visible');
+  loading.classList.add('visible');
+
+  try {
+    const res  = await fetch(`${getServerUrl()}/report?month=${month}`, { headers: hdrs() });
+    const data = await res.json();
+    loading.classList.remove('visible');
+    if (!data.success) throw new Error(data.error);
+
+    reportCache = data.report;
+
+    // Summary stats
+    document.getElementById('statAvg').textContent    = data.overall_avg != null ? data.overall_avg + '%' : '–';
+    document.getElementById('statChecks').textContent  = data.total_checks ?? 0;
+    document.getElementById('statWorkers').textContent = data.report.length;
+    document.getElementById('reportCount').textContent = data.report.length;
+
+    // Worker of Month banner
+    const wotmSec = document.getElementById('wotmSection');
+    if (data.report.length > 0 && data.report[0].worker_of_month) {
+      const top = data.report[0];
+      wotmSec.style.display = 'block';
+      document.getElementById('wotmName').textContent = top.worker_name;
+      document.getElementById('wotmSub').textContent  =
+        `${top.avg_score}% avg  ·  ${top.checks} ${currentLang === 'tr' ? 'kontrol' : 'checks'}`;
+    } else {
+      wotmSec.style.display = 'none';
+    }
+
+    if (data.report.length === 0) {
+      list.innerHTML = `<div style="color:var(--text2); font-family:var(--font-mono); font-size:12px; padding:12px 0;">
+        ${currentLang === 'tr' ? 'Bu ay için veri yok.' : 'No data for this month.'}
+      </div>`;
+      panel.classList.add('visible');
+      return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    list.innerHTML = data.report.map((w, i) => {
+      const fillClass = w.avg_score >= 90 ? '' : w.avg_score >= 70 ? ' medium' : ' low';
+      const isTop     = !!w.worker_of_month;
+      return `
+        <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;">
+              <span style="font-size:16px;">${medals[i] || (i + 1) + '.'}</span>
+              ${escHtml(w.worker_name)}
+              ${isTop ? '<span style="background:rgba(0,255,136,0.15); color:var(--accent); font-family:var(--font-mono); font-size:10px; padding:2px 8px; border-radius:10px; letter-spacing:0.5px; border:1px solid rgba(0,255,136,0.3);">★ WOM</span>' : ''}
+            </div>
+            <span style="font-family:var(--font-mono); font-size:11px; color:var(--text2);">
+              ${w.checks} ${currentLang === 'tr' ? 'kontrol' : 'checks'}
+            </span>
+          </div>
+          <div class="accuracy-bar" style="margin-bottom:0;">
+            <span class="accuracy-label">${w.avg_score >= 90 ? '✓' : w.avg_score >= 70 ? '⚠' : '✗'} ${currentLang === 'tr' ? 'Uyum' : 'Compliance'}</span>
+            <div class="accuracy-track">
+              <div class="accuracy-fill${fillClass}" style="width:${w.avg_score}%"></div>
+            </div>
+            <span class="accuracy-value">${w.avg_score}%</span>
+          </div>
+          <div style="display:flex; gap:16px; margin-top:4px; padding-left:108px;">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--accent3);">
+              ↓ ${w.min_score}%
+            </span>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--accent);">
+              ↑ ${w.max_score}%
+            </span>
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('exportBtn').style.display = 'inline';
+    panel.classList.add('visible');
+
+  } catch (e) {
+    loading.classList.remove('visible');
+    list.innerHTML = `<div style="color:var(--accent3); font-family:var(--font-mono); font-size:12px; padding:12px 0;">
+      ❌ ${currentLang === 'tr' ? 'Rapor yüklenemedi' : 'Failed to load report'}: ${e.message}
+    </div>`;
+    panel.classList.add('visible');
+  }
+}
+
+/* ── Worker filter dropdown ─────────────────────────── */
+async function loadWorkerFilter() {
+  try {
+    const res  = await fetch(getServerUrl() + '/workers', { headers: hdrs() });
+    const data = await res.json();
+    const sel  = document.getElementById('workerFilter');
+    const prev = sel.value;
+    const allLabel = t[currentLang].filterAll;
+
+    sel.innerHTML = `<option value="">${allLabel}</option>` +
+      (data.workers || []).map(w =>
+        `<option value="${w.id}" ${String(w.id) === prev ? 'selected' : ''}>${escHtml(w.name)}</option>`
+      ).join('');
+  } catch { /* ignore */ }
+}
+
+/* ── Recent logs ─────────────────────────────────────── */
+async function loadLogs() {
+  const workerId = document.getElementById('workerFilter').value;
+  const panel    = document.getElementById('logsPanel');
+  const list     = document.getElementById('logsList');
+  const loading  = document.getElementById('logsLoading');
+
+  panel.classList.remove('visible');
+  loading.classList.add('visible');
+
+  try {
+    const qp  = workerId ? `&worker_id=${workerId}` : '';
+    const res  = await fetch(`${getServerUrl()}/logs?limit=30${qp}`, { headers: hdrs() });
+    const data = await res.json();
+    loading.classList.remove('visible');
+
+    if (!data.success || !data.logs.length) {
+      document.getElementById('logsCount').textContent = 0;
+      list.innerHTML = `<div style="color:var(--text2); font-family:var(--font-mono); font-size:12px; padding:12px 0;">${t[currentLang].logsEmpty}</div>`;
+      panel.classList.add('visible');
+      return;
+    }
+
+    document.getElementById('logsCount').textContent = data.logs.length;
+
+    list.innerHTML = data.logs.map(log => {
+      const score     = log.compliance_score;
+      const scoreCol  = score == null ? 'var(--text2)' : score >= 90 ? 'var(--accent)' : score >= 70 ? '#ffaa00' : 'var(--accent3)';
+      const worn      = (log.ppe_worn    || []);
+      const missing   = (log.ppe_missing || []);
+
+      const wornTags    = worn.map(l => `<span class="class-tag" style="font-size:10px; padding:3px 7px; color:var(--accent); border-color:rgba(0,255,136,0.2);">✓ ${l}</span>`).join('');
+      const missingTags = missing.map(l => `<span class="class-tag" style="font-size:10px; padding:3px 7px; color:var(--accent3); border-color:rgba(255,68,102,0.2);">✗ ${l}</span>`).join('');
+
+      return `
+        <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+          <div class="result-item" style="padding:0 0 6px 0; border-bottom:none;">
+            <div class="result-label">
+              <div class="result-dot${score != null && score < 70 ? ' danger' : score != null && score < 90 ? ' warning' : ''}"></div>
+              <span style="font-weight:600;">${escHtml(log.worker_name || '–')}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:${scoreCol};">
+                ${score != null ? score + '%' : '–'}
+              </span>
+              <span class="result-conf">${formatDate(log.timestamp)}</span>
+            </div>
+          </div>
+          ${worn.length || missing.length ? `
+          <div class="class-grid" style="margin-top:6px; gap:4px;">
+            ${wornTags}${missingTags}
+          </div>` : ''}
+        </div>`;
+    }).join('');
+
+    panel.classList.add('visible');
+
+  } catch {
+    loading.classList.remove('visible');
+    list.innerHTML = `<div style="color:var(--accent3); font-family:var(--font-mono); font-size:12px; padding:12px 0;">
+      ❌ ${currentLang === 'tr' ? 'Kayıtlar yüklenemedi' : 'Failed to load logs'}
+    </div>`;
+    panel.classList.add('visible');
+  }
+}
+
+/* ── CSV export ─────────────────────────────────────── */
+function exportCSV() {
+  if (!reportCache.length) return;
+  const month  = document.getElementById('monthPicker').value;
+  const header = 'Rank,Worker,Avg Score (%),Checks,Min (%),Max (%)';
+  const rows   = reportCache.map((w, i) =>
+    `${i+1},"${w.worker_name}",${w.avg_score},${w.checks},${w.min_score},${w.max_score}`
+  );
+  const blob   = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
+  const a      = document.createElement('a');
+  a.href       = URL.createObjectURL(blob);
+  a.download   = `safeguard_compliance_${month}.csv`;
+  a.click();
+}
+
+/* ── Helpers ────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString(currentLang === 'tr' ? 'tr-TR' : 'en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return iso; }
+}
+
+/* ── Init ───────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  // Restore theme
+  const savedTheme = localStorage.getItem('sg_theme');
+  if (savedTheme === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+    document.getElementById('themeBtn').textContent = '🌙';
+  }
+  // Restore lang
+  currentLang = localStorage.getItem('sg_lang') || 'en';
+  applyTranslations();
+
+  // Default month = current
+  document.getElementById('monthPicker').value = new Date().toISOString().slice(0, 7);
+
+  // Auto-load if server URL is set
+  if (getServerUrl()) loadAll();
+});
+</script>
+</body>
+</html>

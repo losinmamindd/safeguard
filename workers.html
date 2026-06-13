@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SafeGuard — Worker Registration</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div class="logo-text" id="appName">Safe<span>Guard</span></div>
+  </div>
+  <div class="header-controls">
+    <button class="control-btn" onclick="toggleLang()" id="langBtn">TR</button>
+    <button class="control-btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
+  </div>
+</header>
+
+<main>
+  <div class="panel active" id="workersPage">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge" id="heroBadge">WORKER REGISTRATION</div>
+      <h1 id="pageTitle">Register <span>Workers</span></h1>
+      <p id="pageDesc" style="font-family:var(--font-mono);">Capture a clear frontal photo. The system will recognise workers automatically during PPE detection.</p>
+    </div>
+
+    <!-- ── CAPTURE SECTION ─────────────────────────── -->
+    <p class="section-label" id="captureLabel">CAPTURE PHOTO</p>
+
+    <div class="detection-area" id="regArea">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="scan-overlay" id="regScanOverlay">
+        <div class="scan-line"></div>
+      </div>
+      <div class="detection-placeholder" id="regPlaceholder">
+        <div class="icon">👤</div>
+        <p id="placeholderText">Open camera or upload a photo<br>to register a worker</p>
+      </div>
+      <video id="regVideo" autoplay playsinline style="display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:18px;"></video>
+      <img id="regPreview" alt="Preview" style="display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:18px;">
+    </div>
+
+    <div class="loading" id="regLoading">
+      <div class="loading-ring"></div>
+      <p id="loadingText">Registering worker...</p>
+    </div>
+
+    <!-- Camera controls -->
+    <button class="action-btn" id="openCamBtn" onclick="openRegCamera()">
+      📷 <span id="openCamText">Open Camera</span>
+    </button>
+    <button class="action-btn" id="captureBtnEl" onclick="captureRegPhoto()" style="display:none">
+      ⚡ <span id="captureText">Capture Photo</span>
+    </button>
+    <button class="action-btn secondary" id="retakeBtn" onclick="retakeReg()" style="display:none">
+      🔄 <span id="retakeText">Retake</span>
+    </button>
+    <label class="action-btn secondary" style="cursor:pointer;">
+      📁 <span id="uploadText">Upload Photo</span>
+      <input type="file" accept="image/*" id="regFileInput" style="display:none" onchange="handleRegUpload(event)">
+    </label>
+
+    <!-- ── WORKER DETAILS ──────────────────────────── -->
+    <p class="section-label" id="detailsLabel">WORKER DETAILS</p>
+
+    <div class="about-section">
+      <h3 id="nameLabel">WORKER NAME / ID</h3>
+      <input type="text" id="workerNameInput"
+        placeholder="e.g. Worker 1 or Ali Yılmaz"
+        maxlength="60"
+        style="width:100%; padding:12px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font-mono); font-size:12px; outline:none; margin-top:8px; transition:border-color 0.2s;"
+        oninput="updateRegBtn()">
+      <p id="nameTip" style="font-family:var(--font-mono); font-size:11px; color:var(--text2); margin-top:8px; line-height:1.5;">
+        💡 Use a well-lit frontal photo. Only one face should be visible.
+      </p>
+    </div>
+
+    <button class="action-btn" id="registerBtn" onclick="registerWorker()" disabled style="opacity:0.45;">
+      ✅ <span id="registerBtnText">Register Worker</span>
+    </button>
+
+    <!-- ── REGISTERED WORKERS ──────────────────────── -->
+    <p class="section-label" id="listLabel">REGISTERED WORKERS</p>
+
+    <div class="stats-bar" id="workerStats" style="margin-bottom:12px;">
+      <div class="stat-item">
+        <div class="stat-value" id="statRegistered">0</div>
+        <div class="stat-label" id="statRegisteredLabel">REGISTERED</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statLogs">–</div>
+        <div class="stat-label" id="statLogsLabel">TOTAL LOGS</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statAvg">–</div>
+        <div class="stat-label" id="statAvgLabel">AVG SCORE</div>
+      </div>
+    </div>
+
+    <div class="results-panel visible" id="workersPanel">
+      <div class="results-header">
+        <div class="results-title">
+          👷 <span id="workersListTitle">Registered Workers</span>
+          <span class="results-count" id="workersCount">0</span>
+        </div>
+      </div>
+      <div id="workersList">
+        <div style="color:var(--text2); font-family:var(--font-mono); font-size:12px; padding:12px 0;" id="emptyState">
+          No workers registered yet.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.panel -->
+</main>
+
+<!-- ── Bottom Nav ──────────────────────────────────────── -->
+<div class="bottom-nav">
+  <div class="nav-item" onclick="location.href='index.html'">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label" id="navHome">HOME</span>
+  </div>
+  <div class="nav-item" onclick="location.href='index.html'">
+    <span class="nav-icon">📸</span>
+    <span class="nav-label" id="navDetect">DETECT</span>
+  </div>
+  <div class="nav-item active">
+    <span class="nav-icon">👷</span>
+    <span class="nav-label" id="navWorkers">WORKERS</span>
+  </div>
+  <div class="nav-item" onclick="location.href='dashboard.html'">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label" id="navDashboard">DASHBOARD</span>
+  </div>
+  <div class="nav-item" onclick="location.href='index.html'">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label" id="navServer">SERVER</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── State ─────────────────────────────────────────── */
+let currentLang    = localStorage.getItem('sg_lang') || 'en';
+let regStream      = null;
+let capturedB64    = null;   // base64 string of captured photo
+
+/* ── Translations ───────────────────────────────────── */
+const t = {
+  en: {
+    appName:           'Safe<span style="color:var(--accent)">Guard</span>',
+    heroBadge:         'WORKER REGISTRATION',
+    pageTitle:         'Register <span>Workers</span>',
+    pageDesc:          'Capture a clear frontal photo. The system will recognise workers automatically during PPE detection.',
+    captureLabel:      'CAPTURE PHOTO',
+    placeholderText:   'Open camera or upload a photo<br>to register a worker',
+    loadingText:       'Registering worker...',
+    openCamText:       'Open Camera',
+    captureText:       'Capture Photo',
+    retakeText:        'Retake',
+    uploadText:        'Upload Photo',
+    detailsLabel:      'WORKER DETAILS',
+    nameLabel:         'WORKER NAME / ID',
+    nameTip:           '💡 Use a well-lit frontal photo. Only one face should be visible.',
+    registerBtnText:   'Register Worker',
+    listLabel:         'REGISTERED WORKERS',
+    statRegisteredLabel: 'REGISTERED',
+    statLogsLabel:     'TOTAL LOGS',
+    statAvgLabel:      'AVG SCORE',
+    workersListTitle:  'Registered Workers',
+    emptyState:        'No workers registered yet.',
+    navHome:           'HOME',
+    navDetect:         'DETECT',
+    navWorkers:        'WORKERS',
+    navDashboard:      'DASHBOARD',
+    navServer:         'SERVER',
+  },
+  tr: {
+    appName:           'Güvenli<span style="color:var(--accent)">Göz</span>',
+    heroBadge:         'İŞÇİ KAYDI',
+    pageTitle:         'İşçi <span>Kaydet</span>',
+    pageDesc:          'Net bir ön yüz fotoğrafı çekin. Sistem, KKD tespiti sırasında işçileri otomatik tanıyacaktır.',
+    captureLabel:      'FOTOĞRAF ÇEK',
+    placeholderText:   'İşçi kaydetmek için kamerayı açın<br>veya fotoğraf yükleyin',
+    loadingText:       'İşçi kaydediliyor...',
+    openCamText:       'Kamerayı Aç',
+    captureText:       'Fotoğraf Çek',
+    retakeText:        'Tekrar Çek',
+    uploadText:        'Fotoğraf Yükle',
+    detailsLabel:      'İŞÇİ BİLGİLERİ',
+    nameLabel:         'İŞÇİ ADI / ID',
+    nameTip:           '💡 İyi aydınlatılmış, net bir ön yüz fotoğrafı kullanın. Yalnızca bir yüz görünür olmalıdır.',
+    registerBtnText:   'İşçiyi Kaydet',
+    listLabel:         'KAYITLI İŞÇİLER',
+    statRegisteredLabel: 'KAYITLI',
+    statLogsLabel:     'TOPLAM KAYIT',
+    statAvgLabel:      'ORT. PUAN',
+    workersListTitle:  'Kayıtlı İşçiler',
+    emptyState:        'Henüz kayıtlı işçi yok.',
+    navHome:           'ANA',
+    navDetect:         'TESPİT',
+    navWorkers:        'İŞÇİLER',
+    navDashboard:      'PANEL',
+    navServer:         'SUNUCU',
+  }
+};
+
+function applyTranslations() {
+  const lang = t[currentLang];
+  Object.keys(lang).forEach(key => {
+    const el = document.getElementById(key);
+    if (el) el.innerHTML = lang[key];
+  });
+  document.documentElement.lang = currentLang;
+  document.getElementById('langBtn').textContent = currentLang === 'en' ? 'TR' : 'EN';
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'tr' : 'en';
+  localStorage.setItem('sg_lang', currentLang);
+  applyTranslations();
+  loadWorkers(); // re-render list labels
+}
+
+function toggleTheme() {
+  const isDark = document.body.getAttribute('data-theme') !== 'light';
+  document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('sg_theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+/* ── Server URL ─────────────────────────────────────── */
+function getServerUrl() {
+  return (localStorage.getItem('serverUrl') || '').replace(/\/$/, '');
+}
+
+/* ── Camera ─────────────────────────────────────────── */
+async function openRegCamera() {
+  try {
+    regStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    const vid = document.getElementById('regVideo');
+    vid.srcObject = regStream;
+    vid.style.display = 'block';
+    document.getElementById('regPlaceholder').style.display = 'none';
+    document.getElementById('regPreview').style.display = 'none';
+    document.getElementById('regArea').classList.add('active');
+    document.getElementById('regScanOverlay').classList.add('active');
+    document.getElementById('openCamBtn').style.display = 'none';
+    document.getElementById('captureBtnEl').style.display = 'flex';
+    document.getElementById('retakeBtn').style.display = 'none';
+    capturedB64 = null;
+    updateRegBtn();
+  } catch (e) {
+    showToast(currentLang === 'tr' ? '❌ Kamera erişimi reddedildi' : '❌ Camera access denied');
+  }
+}
+
+function captureRegPhoto() {
+  const vid = document.getElementById('regVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width  = vid.videoWidth  || 640;
+  canvas.height = vid.videoHeight || 480;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+  capturedB64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+
+  const preview = document.getElementById('regPreview');
+  preview.src = 'data:image/jpeg;base64,' + capturedB64;
+  preview.style.display = 'block';
+  vid.style.display = 'none';
+
+  document.getElementById('regScanOverlay').classList.remove('active');
+  document.getElementById('captureBtnEl').style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'flex';
+
+  if (regStream) { regStream.getTracks().forEach(track => track.stop()); regStream = null; }
+  updateRegBtn();
+}
+
+function retakeReg() {
+  capturedB64 = null;
+  document.getElementById('regPreview').style.display = 'none';
+  document.getElementById('regPlaceholder').style.display = 'block';
+  document.getElementById('regArea').classList.remove('active');
+  document.getElementById('retakeBtn').style.display = 'none';
+  document.getElementById('openCamBtn').style.display = 'flex';
+  document.getElementById('captureBtnEl').style.display = 'none';
+  updateRegBtn();
+}
+
+function handleRegUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    capturedB64 = ev.target.result.split(',')[1];
+    const preview = document.getElementById('regPreview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+    document.getElementById('regVideo').style.display = 'none';
+    document.getElementById('regPlaceholder').style.display = 'none';
+    document.getElementById('regArea').classList.add('active');
+    document.getElementById('regScanOverlay').classList.remove('active');
+    document.getElementById('openCamBtn').style.display = 'none';
+    document.getElementById('captureBtnEl').style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'flex';
+    updateRegBtn();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateRegBtn() {
+  const hasPhoto = !!capturedB64;
+  const hasName  = document.getElementById('workerNameInput').value.trim().length > 0;
+  const btn      = document.getElementById('registerBtn');
+  const ready    = hasPhoto && hasName;
+  btn.disabled   = !ready;
+  btn.style.opacity = ready ? '1' : '0.45';
+}
+
+/* ── Register worker ────────────────────────────────── */
+async function registerWorker() {
+  const name = document.getElementById('workerNameInput').value.trim();
+  if (!name || !capturedB64) return;
+
+  const url = getServerUrl();
+  if (!url) {
+    showToast(currentLang === 'tr' ? '❌ Önce sunucu URL\'sini girin' : '❌ Set server URL in Settings first');
+    return;
+  }
+
+  // Show loading
+  document.getElementById('regLoading').classList.add('visible');
+  document.getElementById('registerBtn').disabled = true;
+  document.getElementById('registerBtn').style.opacity = '0.45';
+
+  try {
+    const res  = await fetch(url + '/register_worker', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body:    JSON.stringify({ name, image: capturedB64 }),
+    });
+    const data = await res.json();
+
+    document.getElementById('regLoading').classList.remove('visible');
+
+    if (data.success) {
+      showToast(`✅ "${name}" ${currentLang === 'tr' ? 'kaydedildi!' : 'registered!'}`);
+      document.getElementById('workerNameInput').value = '';
+      capturedB64 = null;
+      retakeReg();
+      loadWorkers();
+    } else {
+      showToast('❌ ' + data.error);
+    }
+  } catch {
+    document.getElementById('regLoading').classList.remove('visible');
+    showToast(currentLang === 'tr' ? '❌ Sunucuya bağlanılamadı' : '❌ Could not reach server');
+  }
+
+  updateRegBtn();
+}
+
+/* ── Load worker list ───────────────────────────────── */
+async function loadWorkers() {
+  const url = getServerUrl();
+  if (!url) return;
+
+  try {
+    // Fetch workers
+    const wRes  = await fetch(url + '/workers', { headers: { 'ngrok-skip-browser-warning': 'true' } });
+    const wData = await wRes.json();
+
+    // Fetch health for log count
+    const hRes  = await fetch(url + '/health', { headers: { 'ngrok-skip-browser-warning': 'true' } });
+    const hData = await hRes.json();
+
+    if (!wData.success) return;
+
+    const workers = wData.workers || [];
+    document.getElementById('statRegistered').textContent = workers.length;
+    document.getElementById('workersCount').textContent   = workers.length;
+    document.getElementById('statLogs').textContent       = hData.total_logs ?? '–';
+
+    const list = document.getElementById('workersList');
+
+    if (workers.length === 0) {
+      list.innerHTML = `<div style="color:var(--text2); font-family:var(--font-mono); font-size:12px; padding:12px 0;">${t[currentLang].emptyState}</div>`;
+      return;
+    }
+
+    list.innerHTML = workers.map((w, i) => `
+      <div class="result-item" style="align-items:center;">
+        <div class="result-label">
+          <div class="result-dot"></div>
+          <strong>${escHtml(w.name)}</strong>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span class="result-conf">${formatDate(w.registered_at)}</span>
+          <span onclick="deleteWorker(${w.id},'${escHtml(w.name)}')"
+            style="color:var(--accent3); font-family:var(--font-mono); font-size:11px; cursor:pointer; padding:2px 6px; border-radius:6px; border:1px solid var(--accent3); transition:background 0.2s;"
+            onmouseover="this.style.background='rgba(255,68,102,0.1)'"
+            onmouseout="this.style.background='transparent'">
+            DEL
+          </span>
+        </div>
+      </div>
+    `).join('');
+
+    // Try getting avg compliance from monthly report
+    loadAvgScore();
+
+  } catch { /* server not reachable */ }
+}
+
+async function loadAvgScore() {
+  const url = getServerUrl();
+  if (!url) return;
+  try {
+    const month = new Date().toISOString().slice(0, 7);
+    const res   = await fetch(`${url}/report?month=${month}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+    const data  = await res.json();
+    if (data.success && data.overall_avg != null) {
+      document.getElementById('statAvg').textContent = data.overall_avg + '%';
+    }
+  } catch { /* ignore */ }
+}
+
+async function deleteWorker(id, name) {
+  const msg = currentLang === 'tr'
+    ? `"${name}" işçisini silmek istiyor musunuz? Tüm uyum kayıtları da silinecektir.`
+    : `Delete worker "${name}"? All compliance logs will be removed.`;
+  if (!confirm(msg)) return;
+  try {
+    await fetch(getServerUrl() + `/workers/${id}`, {
+      method:  'DELETE',
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+    });
+    showToast(currentLang === 'tr' ? '🗑 İşçi silindi' : '🗑 Worker deleted');
+    loadWorkers();
+  } catch {
+    showToast(currentLang === 'tr' ? '❌ Silme başarısız' : '❌ Delete failed');
+  }
+}
+
+/* ── Helpers ────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString(currentLang === 'tr' ? 'tr-TR' : 'en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return iso; }
+}
+
+/* ── Init ───────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  // Restore theme
+  const savedTheme = localStorage.getItem('sg_theme');
+  if (savedTheme === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+    document.getElementById('themeBtn').textContent = '🌙';
+  }
+  // Restore lang
+  currentLang = localStorage.getItem('sg_lang') || 'en';
+  applyTranslations();
+  // Load worker list
+  loadWorkers();
+});
+</script>
+</body>

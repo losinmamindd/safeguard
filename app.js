@@ -86,8 +86,9 @@
       aboutDevDesc: 'Zehra Menekşe — Computer Engineering, Bilecik Şeyh Edebali University<br><br>Advisor: Dr. Öğr. Üyesi Gizem ATAÇ KALE',
       navHome: 'HOME',
       navCamera: 'DETECT',
-      navFile: 'FILES',
-      navAbout: 'ABOUT',
+      navWorkers: 'WORKERS',
+      navDashboard: 'DASHBOARD',
+      navSettings: 'SERVER',
     },
     tr: {
       appName: 'Güvenli<span style="color:var(--accent)">Göz</span>',
@@ -127,8 +128,9 @@
       aboutDevDesc: 'Zehra Menekşe — Bilgisayar Mühendisliği, Bilecik Şeyh Edebali Üniversitesi<br><br>Danışman: Dr. Öğr. Üyesi Gizem ATAÇ KALE',
       navHome: 'ANA',
       navCamera: 'TESPİT',
-      navFile: 'DOSYA',
-      navAbout: 'HAKKINDA',
+      navWorkers: 'İŞÇİLER',
+      navDashboard: 'PANEL',
+      navSettings: 'SUNUCU',
     }
   };
 
@@ -156,7 +158,8 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(page + 'Page').classList.add('active');
-    document.getElementById('nav-' + page).classList.add('active');
+    const navEl = document.getElementById('nav-' + page);
+    if (navEl) navEl.classList.add('active');
     if (page !== 'camera' && isLive) stopLive();
   }
 
