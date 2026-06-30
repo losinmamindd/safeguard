@@ -167,8 +167,44 @@
   function startCamera() { showPage('camera'); }
   function startLive() { showPage('camera'); toggleLive(); }
 
-  function capturePhoto() {
-    document.getElementById('cameraInput').click();
+  async function capturePhoto() {
+    // Use getUserMedia directly instead of relying on <input capture>,
+    // which is unreliable on some iOS Safari versions.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const video = document.getElementById('liveVideo');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      document.getElementById('cameraArea').classList.add('active');
+      document.getElementById('cameraPlaceholder').style.display = 'none';
+
+      // Wait for the video to be ready, then grab a single frame
+      await new Promise(resolve => {
+        if (video.readyState >= 2) return resolve();
+        video.onloadedmetadata = () => resolve();
+      });
+
+      // Small delay so the camera has time to focus/expose
+      await new Promise(r => setTimeout(r, 350));
+
+      const canvas = document.getElementById('detectionCanvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Stop camera stream immediately after capture
+      stream.getTracks().forEach(t => t.stop());
+      video.style.display = 'none';
+      video.srcObject = null;
+
+      canvas.toBlob(blob => {
+        if (blob) processFile(blob, 'camera');
+      }, 'image/jpeg', 0.85);
+
+    } catch (e) {
+      // Fallback to the file-input approach if camera access fails/denied
+      document.getElementById('cameraInput').click();
+    }
   }
 
   function handleCameraCapture(event) {
