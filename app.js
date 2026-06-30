@@ -269,6 +269,8 @@
     showRealResults(mode, mockDetections);
   }
 
+  let liveDetectionInterval = null;
+
   async function toggleLive() {
     if (isLive) {
       stopLive();
@@ -285,13 +287,67 @@
         document.getElementById('cameraPlaceholder').style.display = 'none';
         isLive = true;
         showToast(currentLang === 'en' ? '🎥 Live detection started!' : '🎥 Canlı tespit başladı!');
+
+        // Wait for video to be ready, then start sending frames periodically
+        video.onloadedmetadata = () => {
+          // Run one detection immediately, then every 2.5s
+          runLiveDetection();
+          liveDetectionInterval = setInterval(runLiveDetection, 2500);
+        };
       } catch (e) {
         showToast(currentLang === 'en' ? '❌ Camera access denied' : '❌ Kamera erişimi reddedildi');
       }
     }
   }
 
+  async function runLiveDetection() {
+    if (!isLive) return;
+    const video = document.getElementById('liveVideo');
+    if (!video.videoWidth) return; // video not ready yet
+
+    const canvas = document.getElementById('detectionCanvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob || !isLive) return;
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        const base64 = e.target.result.split(',')[1];
+        try {
+          const response = await fetch(getServerUrl() + '/detect', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({ image: base64 })
+          });
+          const data = await response.json();
+          if (!isLive) return; // user may have stopped while waiting
+          if (data.success) {
+            showRealResults('camera', data.detections);
+          }
+        } catch (err) {
+          // Stay silent on individual frame failures during live mode,
+          // but surface a toast once so the user knows the server is unreachable.
+          if (isLive && !liveDetectionInterval._warned) {
+            showToast(currentLang === 'en' ? '❌ Could not reach server' : '❌ Sunucuya ulaşılamadı');
+            if (liveDetectionInterval) liveDetectionInterval._warned = true;
+          }
+        }
+      };
+      reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.8);
+  }
+
   function stopLive() {
+    if (liveDetectionInterval) {
+      clearInterval(liveDetectionInterval);
+      liveDetectionInterval = null;
+    }
     if (liveStream) {
       liveStream.getTracks().forEach(t => t.stop());
       liveStream = null;
